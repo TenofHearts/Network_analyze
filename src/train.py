@@ -14,6 +14,7 @@ from models.propagation import IndependentCascade
 from utils.metrics import calculate_spread_metrics, calculate_node_importance_scores
 from utils.visualization import plot_propagation_history, plot_node_importance
 from data.dataset import SNAPDataset
+from config import OUTPUT_DIR, MODEL_DIR
 
 
 def save_model(model, optimizer, epoch, loss, save_path):
@@ -163,12 +164,9 @@ def main():
     )
     args = parser.parse_args()
 
-    # 创建输出目录
-    os.makedirs("outputs", exist_ok=True)
-
     # 设置默认的模型保存路径
     if args.save_path is None:
-        args.save_path = f"outputs/models/{args.dataset}_gat_model.pt"
+        args.save_path = MODEL_DIR / f"{args.dataset}_gat_model.pt"
 
     # 加载数据集
     dataset = SNAPDataset(args.dataset, n_simulations=args.n_simulations)
@@ -225,7 +223,7 @@ def main():
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     plt.grid(True)
-    plt.savefig(f"outputs/{args.dataset}_training_loss.png")
+    plt.savefig(OUTPUT_DIR / f"{args.dataset}_training_loss.png")
 
     # 评估模型
     model.eval()
@@ -250,7 +248,7 @@ def main():
             importance_scores,
             title=f"{args.dataset} node importance distribution",
         )
-        plt.savefig(f"outputs/{args.dataset}_importance.png")
+        plt.savefig(OUTPUT_DIR / f"{args.dataset}_importance.png")
         plt.close()  # 关闭图形，避免内存泄漏
 
         # 传播模拟
@@ -272,7 +270,7 @@ def main():
         plot_propagation_history(
             propagation_results, title=f"{args.dataset} propagation process"
         )
-        plt.savefig(f"outputs/{args.dataset}_propagation.png")
+        plt.savefig(OUTPUT_DIR / f"{args.dataset}_propagation.png")
         plt.close()  # 关闭图形，避免内存泄漏
 
 

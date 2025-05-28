@@ -12,41 +12,24 @@ import pickle
 from pathlib import Path
 
 from models.propagation import IndependentCascade
+from config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, DATASET_URLS
 
 
 class SNAPDataset:
     """Stanford SNAP数据集加载器"""
 
-    DATASET_URLS = {
-        "facebook": "https://snap.stanford.edu/data/facebook_combined.txt.gz",
-        "twitter": "https://snap.stanford.edu/data/twitter_combined.txt.gz",
-        "epinions": "https://snap.stanford.edu/data/soc-Epinions1.txt.gz",
-    }
-
-    def __init__(
-        self, dataset_name: str, data_dir: str = "data", n_simulations: int = 100
-    ):
+    def __init__(self, dataset_name: str, n_simulations: int = 100):
         """
         初始化数据集加载器
 
         参数:
             dataset_name: 数据集名称 ('facebook', 'twitter', 'epinions')
-            data_dir: 数据存储目录
             n_simulations: IC模型模拟次数
         """
         self.dataset_name = dataset_name
-        self.data_dir = data_dir
-        self.raw_dir = os.path.join(data_dir, "raw")
-        self.raw_file = os.path.join(self.raw_dir, f"{dataset_name}.txt")
+        self.raw_file = RAW_DATA_DIR / f"{dataset_name}.txt"
         self.n_simulations = n_simulations
-        self.processed_dir = os.path.join(data_dir, "processed")
-        self.cache_file = os.path.join(
-            self.processed_dir, f"{dataset_name}_processed.pkl"
-        )
-
-        # 确保数据目录存在
-        os.makedirs(data_dir, exist_ok=True)
-        os.makedirs(self.processed_dir, exist_ok=True)
+        self.cache_file = PROCESSED_DATA_DIR / f"{dataset_name}_processed.pkl"
 
         # 下载数据集（如果不存在）
         if not os.path.exists(self.raw_file):
@@ -54,10 +37,10 @@ class SNAPDataset:
 
     def _download_dataset(self):
         """下载并解压数据集"""
-        if self.dataset_name not in self.DATASET_URLS:
+        if self.dataset_name not in DATASET_URLS:
             raise ValueError(f"不支持的数据集: {self.dataset_name}")
 
-        url = self.DATASET_URLS[self.dataset_name]
+        url = DATASET_URLS[self.dataset_name]
         gz_file = f"{self.raw_file}.gz"
 
         print(f"正在下载数据集: {self.dataset_name}")
