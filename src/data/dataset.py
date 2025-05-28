@@ -77,27 +77,53 @@ class SNAPDataset:
         1. 节点度
         2. 聚类系数
         3. PageRank值
-        4. 介数中心性
+        4. 二阶邻居数
+        5. 节点度中心性
+        6. 特征向量中心性的快速近似
         """
         print("正在生成节点特征...")
         n_nodes = len(graph)
-        features = np.zeros((n_nodes, 4))
+        features = np.zeros((n_nodes, 6))
 
-        # 节点度
+        # 1. 节点度
         degrees = dict(graph.degree())
         features[:, 0] = [degrees[node] for node in range(n_nodes)]
 
-        # 聚类系数
+        # 2. 聚类系数
         clustering = nx.clustering(graph)
         features[:, 1] = [clustering.get(node, 0) for node in range(n_nodes)]
 
-        # PageRank
-        pagerank = nx.pagerank(graph)
+        # 3. PageRank
+        pagerank = nx.pagerank(graph, max_iter=100)  # 减少迭代次数以加快速度
         features[:, 2] = [pagerank[node] for node in range(n_nodes)]
 
-        # 介数中心性
-        betweenness = nx.betweenness_centrality(graph)
-        features[:, 3] = [betweenness[node] for node in range(n_nodes)]
+        # 4. 二阶邻居数
+        for node in range(n_nodes):
+            neighbors = set(graph.neighbors(node))
+            second_neighbors = set()
+            for neighbor in neighbors:
+                second_neighbors.update(graph.neighbors(neighbor))
+            second_neighbors -= neighbors  # 移除一阶邻居
+            features[node, 3] = len(second_neighbors)
+
+        # 5. 节点度中心性（归一化的度）
+        max_degree = max(degrees.values())
+        features[:, 4] = [degrees[node] / max_degree for node in range(n_nodes)]
+
+        # 6. 特征向量中心性的快速近似（使用幂迭代法，只迭代5次）
+        def power_iteration(graph, n_iter=5):
+            n = len(graph)
+            x = np.ones(n) / n
+            for _ in range(n_iter):
+                x_new = np.zeros(n)
+                for node in range(n):
+                    for neighbor in graph.neighbors(node):
+                        x_new[node] += x[neighbor]
+                x = x_new / np.sum(x_new)
+            return x
+
+        eigenvector_approx = power_iteration(graph)
+        features[:, 5] = eigenvector_approx
 
         # 标准化特征
         features = (features - features.mean(axis=0)) / (features.std(axis=0) + 1e-8)
