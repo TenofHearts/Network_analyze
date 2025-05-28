@@ -11,10 +11,9 @@ PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
 # 输出相关路径
 OUTPUT_DIR = ROOT_DIR / "outputs"
-MODEL_DIR = OUTPUT_DIR / "models"
 
 # 创建必要的目录
-for dir_path in [DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, OUTPUT_DIR, MODEL_DIR]:
+for dir_path in [DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, OUTPUT_DIR]:
     dir_path.mkdir(parents=True, exist_ok=True)
 
 # 数据集URL

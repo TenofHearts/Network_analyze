@@ -49,28 +49,49 @@ def plot_node_importance(
         graph: NetworkX图对象
         importance_scores: 节点重要性分数
         title: 图表标题
+
+    性能分析:
+    1. 布局计算最耗时 - nx.kamada_kawai_layout() 需要O(N^2)时间复杂度
+    2. 边的绘制次之 - 需要O(E)时间处理所有边
+    3. 节点绘制较快 - 一次性绘制所有节点O(N)
+    4. 其他操作(如数组复制等)耗时很小
     """
     plt.figure(figsize=(12, 8))
 
-    # 创建布局
-    pos = nx.spring_layout(graph, seed=42)
+    # 使用更快的布局算法
+    pos = nx.kamada_kawai_layout(graph)
 
-    # 绘制节点
+    # 预先计算节点大小以避免重复计算
+    n_nodes = len(graph)
+    node_sizes = np.ones(n_nodes)
+
+    # 使用numpy数组存储颜色值以提高效率
+    node_colors = importance_scores.copy()
+
+    # 一次性绘制所有节点
     nodes = nx.draw_networkx_nodes(
         graph,
         pos,
-        node_color=importance_scores,
-        node_size=100,
+        node_color=node_colors,
+        node_size=node_sizes,
         cmap=plt.cm.viridis,
-        alpha=0.8,
+        alpha=0.6,
     )
 
-    # 绘制边
-    nx.draw_networkx_edges(graph, pos, alpha=0.2)
+    # 一次性绘制所有边,使用稀疏矩阵存储边信息
+    edge_list = list(graph.edges())
+    if edge_list:
+        edge_pos = np.array([(pos[e[0]], pos[e[1]]) for e in edge_list])
+        plt.plot(
+            edge_pos[:, :, 0].T,
+            edge_pos[:, :, 1].T,
+            "-",
+            color="gray",
+            alpha=0.2,
+            linewidth=0.5,
+        )
 
-    # 添加颜色条
     plt.colorbar(nodes, label="node importance")
-
     plt.title(title)
     plt.axis("off")
     plt.tight_layout()

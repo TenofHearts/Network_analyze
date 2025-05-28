@@ -14,7 +14,7 @@ from models.propagation import IndependentCascade
 from utils.metrics import calculate_spread_metrics, calculate_node_importance_scores
 from utils.visualization import plot_propagation_history, plot_node_importance
 from data.dataset import SNAPDataset
-from config import OUTPUT_DIR, MODEL_DIR
+from config import OUTPUT_DIR
 
 
 def save_model(model, optimizer, epoch, loss, save_path):
@@ -166,7 +166,11 @@ def main():
 
     # 设置默认的模型保存路径
     if args.save_path is None:
-        args.save_path = MODEL_DIR / f"{args.dataset}_gat_model.pt"
+        args.save_path = (
+            OUTPUT_DIR / f"{args.dataset}" / "model" / f"{args.dataset}_gat_model.pt"
+        )
+    fig_dir = OUTPUT_DIR / f"{args.dataset}" / "fig"
+    fig_dir.mkdir(parents=True, exist_ok=True)  # 创建fig目录
 
     # 加载数据集
     dataset = SNAPDataset(args.dataset, n_simulations=args.n_simulations)
@@ -188,49 +192,60 @@ def main():
     # 优化器
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-    # 损失函数
-    criterion = nn.MSELoss()
+    # 检查是否存在已保存的模型
+    if os.path.exists(args.save_path):
+        print(f"\n发现已保存的模型: {args.save_path}")
+        print("加载模型并直接进行评估...")
+        checkpoint = torch.load(args.save_path, map_location=args.device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model = model.to(args.device)  # 确保模型在正确的设备上
+        train_losses = []  # 空列表，因为没有训练过程
+    else:
+        # 损失函数
+        criterion = nn.MSELoss()
 
-    print(f"数据集: {args.dataset}")
-    print(f"节点数: {data.x.size(0)}")
-    print(f"边数: {data.edge_index.size(1)}")
-    print(f"特征维度: {in_channels}")
-    print(f"IC模拟次数: {args.n_simulations}")
-    print(f"训练设备: {args.device}")
-    print(f"模型保存路径: {args.save_path}")
-    if args.load_path:
-        print(f"模型加载路径: {args.load_path}")
-    print("\n模型结构：")
-    print(model)
+        print(f"数据集: {args.dataset}")
+        print(f"节点数: {data.x.size(0)}")
+        print(f"边数: {data.edge_index.size(1)}")
+        print(f"特征维度: {in_channels}")
+        print(f"IC模拟次数: {args.n_simulations}")
+        print(f"训练设备: {args.device}")
+        print(f"模型保存路径: {args.save_path}")
+        if args.load_path:
+            print(f"模型加载路径: {args.load_path}")
+        print("\n模型结构：")
+        print(model)
 
-    # 训练模型
-    print("\n开始训练...")
-    train_losses = train_model(
-        model,
-        data,
-        optimizer,
-        criterion,
-        epochs=args.epochs,
-        device=args.device,
-        save_path=args.save_path,
-        load_path=args.load_path,
-    )
+        # 训练模型
+        print("\n开始训练...")
+        train_losses = train_model(
+            model,
+            data,
+            optimizer,
+            criterion,
+            epochs=args.epochs,
+            device=args.device,
+            save_path=args.save_path,
+            load_path=args.load_path,
+        )
 
-    # 绘制训练损失曲线
-    plt.figure(figsize=(10, 6))
-    plt.plot(train_losses)
-    plt.title("training loss curve")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.grid(True)
-    plt.savefig(OUTPUT_DIR / f"{args.dataset}_training_loss.png")
+        # 绘制训练损失曲线
+        plt.figure(figsize=(10, 6))
+        plt.plot(train_losses)
+        plt.ylim(bottom=0)
+        plt.title("training loss curve")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.grid(True)
+        plt.savefig(fig_dir / f"{args.dataset}_training_loss.png")
+        plt.close()
 
     # 评估模型
     model.eval()
     with torch.no_grad():
-        data = data.to(args.device)
+        data = data.to(args.device)  # 确保数据在正确的设备上
         predictions = model(data.x, data.edge_index)
-        predictions = predictions.cpu().numpy()
+        predictions = predictions.cpu().numpy()  # 将预测结果移回CPU进行后续处理
         importance_scores = calculate_node_importance_scores(predictions)
 
         # 获取top-k节点
@@ -242,13 +257,15 @@ def main():
             )
 
         # 可视化节点重要性
+        print("\n可视化节点重要性...")
         graph = dataset.load_graph()
+        print("绘制节点重要性分布图...")
         plot_node_importance(
             graph,
             importance_scores,
             title=f"{args.dataset} node importance distribution",
         )
-        plt.savefig(OUTPUT_DIR / f"{args.dataset}_importance.png")
+        plt.savefig(fig_dir / f"{args.dataset}_importance.png")
         plt.close()  # 关闭图形，避免内存泄漏
 
         # 传播模拟
@@ -256,7 +273,7 @@ def main():
 
         # 进行多次传播模拟
         propagation_results = []
-        for _ in range(10):
+        for _ in tqdm(range(10), desc="进行传播模拟"):
             result = propagation_model.simulate(top_k_nodes.tolist())
             propagation_results.append(result)
 
@@ -270,7 +287,7 @@ def main():
         plot_propagation_history(
             propagation_results, title=f"{args.dataset} propagation process"
         )
-        plt.savefig(OUTPUT_DIR / f"{args.dataset}_propagation.png")
+        plt.savefig(fig_dir / f"{args.dataset}_propagation.png")
         plt.close()  # 关闭图形，避免内存泄漏
 
 

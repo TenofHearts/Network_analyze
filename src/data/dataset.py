@@ -83,7 +83,7 @@ class SNAPDataset:
         """
         print("正在生成节点特征...")
         n_nodes = len(graph)
-        features = np.zeros((n_nodes, 6))
+        features = np.zeros((n_nodes, 6 if len(graph) < 5000 else 7))
 
         # 1. 节点度
         degrees = dict(graph.degree())
@@ -125,6 +125,13 @@ class SNAPDataset:
         eigenvector_approx = power_iteration(graph)
         features[:, 5] = eigenvector_approx
 
+        # 7. 介数中心性(若节点数小于5,000)
+        if len(graph) < 5000:
+            betweenness = nx.betweenness_centrality(graph)
+            features[:, 6] = [betweenness[node] for node in range(n_nodes)]
+        else:
+            features[:, 6] = 0
+
         # 标准化特征
         features = (features - features.mean(axis=0)) / (features.std(axis=0) + 1e-8)
         return features
@@ -163,15 +170,12 @@ class SNAPDataset:
     def _load_processed_data(self) -> Optional[Tuple[np.ndarray, np.ndarray]]:
         """加载处理后的数据"""
         if os.path.exists(self.cache_file):
+            print(f"从{self.cache_file}加载处理后的数据...")
             try:
                 with open(self.cache_file, "rb") as f:
                     cached_data = pickle.load(f)
-                    if (
-                        cached_data["n_simulations"] == self.n_simulations
-                        and cached_data["dataset_name"] == self.dataset_name
-                    ):
-                        print("从缓存加载处理后的数据...")
-                        return cached_data["features"], cached_data["labels"]
+                    print("从缓存加载处理后的数据...")
+                    return cached_data["features"], cached_data["labels"]
             except Exception as e:
                 print(f"加载缓存数据失败: {e}")
         return None
