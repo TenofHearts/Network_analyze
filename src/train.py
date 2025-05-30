@@ -170,7 +170,8 @@ def main():
             OUTPUT_DIR / f"{args.dataset}" / "model" / f"{args.dataset}_gat_model.pt"
         )
     fig_dir = OUTPUT_DIR / f"{args.dataset}" / "fig"
-    fig_dir.mkdir(parents=True, exist_ok=True)  # 创建fig目录
+    if not fig_dir.exists():
+        fig_dir.mkdir(parents=True, exist_ok=True)  # 创建fig目录
 
     # 加载数据集
     dataset = SNAPDataset(args.dataset, n_simulations=args.n_simulations)
@@ -264,9 +265,8 @@ def main():
             graph,
             importance_scores,
             title=f"{args.dataset} node importance distribution",
+            save_dir=fig_dir,
         )
-        plt.savefig(fig_dir / f"{args.dataset}_importance.png")
-        plt.close()  # 关闭图形，避免内存泄漏
 
         # 传播模拟
         propagation_model = IndependentCascade(graph)
@@ -285,9 +285,10 @@ def main():
 
         # 可视化传播过程
         plot_propagation_history(
-            propagation_results, title=f"{args.dataset} propagation process"
+            propagation_results,
+            title=f"{args.dataset} propagation process",
+            save_path=fig_dir / f"{args.dataset}_propagation.png",
         )
-        plt.savefig(fig_dir / f"{args.dataset}_propagation.png")
         plt.close()  # 关闭图形，避免内存泄漏
 
 

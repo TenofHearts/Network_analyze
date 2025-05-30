@@ -10,6 +10,9 @@ import shutil
 from tqdm import tqdm
 import pickle
 from pathlib import Path
+import multiprocessing as mp
+from functools import partial
+from itertools import chain
 
 from models.propagation import IndependentCascade
 from config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, DATASET_URLS
@@ -136,9 +139,58 @@ class SNAPDataset:
         features = (features - features.mean(axis=0)) / (features.std(axis=0) + 1e-8)
         return features
 
+    def _create_process_safe_ic_model(self, graph: nx.Graph) -> IndependentCascade:
+        """
+        创建进程安全的IC模型实例
+
+        参数:
+            graph: NetworkX图对象
+
+        返回:
+            IC模型实例
+        """
+        # 创建图的深拷贝，确保每个进程有自己的图副本
+        graph_copy = graph.copy()
+        return IndependentCascade(graph_copy)
+
+    def _process_node_batch(
+        self, node_batch: List[int], graph: nx.Graph, process_id: int
+    ) -> List[float]:
+        """
+        处理一批节点的影响力计算
+
+        参数:
+            node_batch: 要处理的节点列表
+            graph: NetworkX图对象
+            process_id: 进程ID
+
+        返回:
+            节点影响力分数列表
+        """
+        # 为每个进程创建独立的IC模型实例
+        ic_model = self._create_process_safe_ic_model(graph)
+        results = []
+
+        # 使用进程ID创建独立的进度条
+        pbar = tqdm(
+            node_batch,
+            desc=f"进程 {process_id} 计算节点影响力",
+            position=process_id,
+            leave=True,
+        )
+
+        for node in pbar:
+            total_activated = 0
+            for _ in range(self.n_simulations):
+                result = ic_model.simulate([node])
+                total_activated += result["total_activated"]
+            results.append(total_activated / self.n_simulations)
+
+        return results
+
     def generate_ic_labels(self, graph: nx.Graph) -> np.ndarray:
         """
-        通过IC模型多次模拟生成节点重要性标签
+        通过IC模型多次模拟生成节点重要性标签（并行版本，固定节点分配）
 
         参数:
             graph: NetworkX图对象
@@ -146,20 +198,35 @@ class SNAPDataset:
         返回:
             节点重要性标签
         """
-        print(f"正在进行{self.n_simulations}次IC模拟生成标签...")
+        print(f"正在进行{self.n_simulations}次IC模拟生成标签（并行计算）...")
         n_nodes = len(graph)
+
+        # 创建进程池
+        n_cores = max(1, mp.cpu_count() - 4)  # 保留一个核心给系统
+        print(f"使用 {n_cores} 个CPU核心进行并行计算")
+
+        # 将节点按进程数分组
+        node_batches = [[] for _ in range(n_cores)]
+        for node in range(n_nodes):
+            process_id = node % n_cores
+            node_batches[process_id].append(node)
+
+        # 使用进程池并行计算
+        with mp.Pool(processes=n_cores) as pool:
+            # 为每个进程分配ID并执行计算
+            results = list(
+                pool.starmap(
+                    self._process_node_batch,
+                    [(batch, graph, i) for i, batch in enumerate(node_batches)],
+                )
+            )
+
+        # 将结果重新排序
         influence_scores = np.zeros(n_nodes)
-
-        # 创建IC模型
-        ic_model = IndependentCascade(graph)
-
-        # 对每个节点进行多次模拟
-        for node in tqdm(range(n_nodes)):
-            total_activated = 0
-            for _ in range(self.n_simulations):
-                result = ic_model.simulate([node])
-                total_activated += result["total_activated"]
-            influence_scores[node] = total_activated / self.n_simulations
+        for batch_idx, batch_results in enumerate(results):
+            for node_idx, score in enumerate(batch_results):
+                original_node = node_batches[batch_idx][node_idx]
+                influence_scores[original_node] = score
 
         # 标准化影响力分数
         influence_scores = (influence_scores - influence_scores.min()) / (
