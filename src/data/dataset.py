@@ -14,8 +14,8 @@ import multiprocessing as mp
 from functools import partial
 from itertools import chain
 
-from models.propagation import IndependentCascade
-from config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, DATASET_URLS
+from ..models.propagation import IndependentCascade
+from ..config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, DATASET_URLS
 
 
 class SNAPDataset:

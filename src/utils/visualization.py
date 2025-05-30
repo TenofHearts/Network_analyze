@@ -103,25 +103,11 @@ def plot_node_importance(
 
         # 准备节点数据
         nodes_data = pd.DataFrame(
-            {
-                "name": list(graph.nodes()),
-                "importance": importance_scores,
-                "shared name": list(graph.nodes()),  # Cytoscape需要shared name列
-            }
+            {"Id": list(graph.nodes()), "Importance": importance_scores}
         )
 
         # 准备边数据
-        edges_data = pd.DataFrame(
-            {
-                "source": [e[0] for e in graph.edges()],
-                "target": [e[1] for e in graph.edges()],
-                "interaction": ["interacts"]
-                * len(graph.edges()),  # Cytoscape需要interaction列
-                "shared name": [
-                    f"{e[0]} (interacts) {e[1]}" for e in graph.edges()
-                ],  # 边的唯一标识
-            }
-        )
+        edges_data = pd.DataFrame(list(graph.edges()), columns=["Source", "Target"])
 
         # 保存文件
         nodes_file = save_path / "nodes.csv"
@@ -132,4 +118,4 @@ def plot_node_importance(
 
         print(f"节点数据已保存至: {nodes_file}")
         print(f"边数据已保存至: {edges_file}")
-        print("请使用Cytoscape软件打开这些文件进行可视化\n")
+        print("请使用Gephi软件打开这些文件进行可视化\n")
