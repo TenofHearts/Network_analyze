@@ -1,3 +1,11 @@
+import os
+import sys
+from pathlib import Path
+
+# 添加项目根目录到Python路径
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -5,9 +13,8 @@ from torch_geometric.data import Data
 import numpy as np
 from tqdm import tqdm
 import argparse
-import os
 import matplotlib.pyplot as plt
-from pathlib import Path
+from datetime import datetime
 
 from models.gat import GATModel
 from models.propagation import IndependentCascade

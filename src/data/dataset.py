@@ -14,8 +14,8 @@ import multiprocessing as mp
 from functools import partial
 from itertools import chain
 
-from ..models.propagation import IndependentCascade
-from ..config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, DATASET_URLS
+from src.models.propagation import IndependentCascade
+from src.config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, DATASET_URLS
 
 
 class SNAPDataset:
@@ -83,10 +83,11 @@ class SNAPDataset:
         4. 二阶邻居数
         5. 节点度中心性
         6. 特征向量中心性的快速近似
+        7. 介数中心性近似
         """
         print("正在生成节点特征...")
         n_nodes = len(graph)
-        features = np.zeros((n_nodes, 6 if len(graph) < 5000 else 7))
+        features = np.zeros((n_nodes, 7))
 
         # 1. 节点度
         degrees = dict(graph.degree())
@@ -128,12 +129,19 @@ class SNAPDataset:
         eigenvector_approx = power_iteration(graph)
         features[:, 5] = eigenvector_approx
 
-        # 7. 介数中心性(若节点数小于5,000)
-        if len(graph) < 5000:
+        # 7. 介数中心性（使用近似算法）
+        # 根据节点数量决定是否使用近似算法
+        if len(graph) > 5000:
+            # 大图使用近似算法
+            betweenness = nx.betweenness_centrality(
+                graph,
+                k=min(100, len(graph)),  # 采样100个节点
+                seed=42,  # 固定随机种子以保证结果可复现
+            )
+        else:
+            # 小图使用精确算法
             betweenness = nx.betweenness_centrality(graph)
             features[:, 6] = [betweenness[node] for node in range(n_nodes)]
-        else:
-            features[:, 6] = 0
 
         # 标准化特征
         features = (features - features.mean(axis=0)) / (features.std(axis=0) + 1e-8)

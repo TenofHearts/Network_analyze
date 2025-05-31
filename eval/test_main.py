@@ -1,17 +1,18 @@
 import networkx as nx
 import numpy as np
-from test_metrics import evaluate_model_performance
-import time
-from typing import List, Set, Dict, Tuple
-import torch
-import os
-import pickle
 import sys
 from pathlib import Path
 
 # 添加项目根目录到Python路径
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
+
+from eval.test_metrics import evaluate_model_performance
+import time
+from typing import List, Set, Dict, Tuple
+import torch
+import os
+import pickle
 
 from src.models.gat import GATModel
 from src.data.dataset import SNAPDataset
@@ -197,7 +198,10 @@ def eigenvector_selection(graph: nx.Graph, k: int) -> Set[int]:
 
 
 def clustering_selection(graph: nx.Graph, k: int) -> Set[int]:
-    """基于局部聚类系数的关键节点选择"""
+    """基于局部聚类系数的关键节点选择
+
+    选择聚类系数最高的节点作为种子节点
+    """
     clustering = nx.clustering(graph)
     return {
         node
@@ -206,10 +210,9 @@ def clustering_selection(graph: nx.Graph, k: int) -> Set[int]:
 
 
 def structural_holes_selection(graph: nx.Graph, k: int) -> Set[int]:
-    """基于结构洞指标的关键节点选择（使用局部约束度近似）
+    """基于结构洞指标的关键节点选择
 
-    使用局部约束度（2-hop邻居）作为结构洞指标的近似
-    约束度越低，节点越可能占据结构洞位置
+    选择约束度最低的节点作为种子节点
     """
 
     def local_constraint(node):
@@ -303,6 +306,7 @@ def compare_algorithms(
     k: int = 10,
     features: np.ndarray = None,
     gat_model_path: str = None,
+    n_rounds: int = 20,
 ) -> Dict:
     """比较不同算法的性能
 
@@ -311,6 +315,7 @@ def compare_algorithms(
         k: 选择的节点数量
         features: 节点特征矩阵，用于GAT模型
         gat_model_path: GAT模型路径
+        n_rounds: 传播模拟轮次
     """
     # 测试不同算法
     algorithms = {
@@ -341,118 +346,114 @@ def compare_algorithms(
 
     results = {}
     for name, algorithm in algorithms.items():
-        print(f"测试 {name} 算法...")
+        print(f"\n测试 {name} 算法...")
+
+        # 记录开始时间
         start_time = time.time()
 
         # 选择种子节点
         seed_nodes = algorithm(graph, k)
 
-        # 模拟传播
-        model_results = simulate_propagation(graph, seed_nodes)
+        # 记录计算时间
+        computation_time = max(0.0, time.time() - start_time)  # 确保时间不为负
 
-        # 评估性能
-        metrics = evaluate_model_performance(
+        # 创建模拟的模型结果
+        model_results = {
+            "activation_times": {node: 0 for node in seed_nodes},
+            "activation_paths": {node: [node] for node in seed_nodes},
+            "computation_time": computation_time,  # 添加计算时间到模型结果中
+        }
+
+        # 使用独立级联模型评估
+        print("使用独立级联模型评估...")
+        ic_metrics = evaluate_model_performance(
             graph=graph,
             model_results=model_results,
             seed_nodes=seed_nodes,
+            n_rounds=n_rounds,
+            propagation_model="ic",
+        )
+
+        # 使用线性阈值模型评估
+        print("使用线性阈值模型评估...")
+        lt_metrics = evaluate_model_performance(
+            graph=graph,
+            model_results=model_results,
+            seed_nodes=seed_nodes,
+            n_rounds=n_rounds,
+            propagation_model="lt",
         )
 
         # 记录结果
         results[name] = {
-            "metrics": metrics,
             "seed_nodes": seed_nodes,
-            "computation_time": time.time() - start_time,
+            "independent_cascade": ic_metrics,
+            "linear_threshold": lt_metrics,
+            "computation_time": computation_time,  # 使用同一个计算时间
         }
 
     return results
 
 
 def print_comparison_results(results: Dict):
-    """打印比较结果"""
-    print("\n算法性能比较结果:")
-    print("-" * 120)
+    """打印比较结果（Markdown格式）"""
+    # 打印独立级联模型结果
+    print("\n独立级联模型 (IC) 性能比较结果\n")
 
-    # 定义表头和列宽
-    headers = [
-        "Algorithm",
-        "Coverage",
-        "Propagation Speed",
-        "Propagation Depth",
-        "Propagation Efficiency",
-        "Model Stability",
-        "Computation Time",
-    ]
-    widths = [30, 15, 20, 20, 25, 20, 25]  # 增加算法名称列宽
+    # 定义表头
+    headers = ["算法", "总激活节点数", "模型稳定性"]
 
     # 打印表头
-    header_format = "".join([f"{{:<{w}}}" for w in widths])
-    print(header_format.format(*headers))
-    print("-" * 120)
+    print("| " + " | ".join(headers) + " |")
+    print("| " + " | ".join(["---"] * len(headers)) + " |")
 
     # 打印数据行
-    row_format = "".join(
-        [
-            f"{{:<{widths[0]}}}",  # 算法名称
-            f"{{:<{widths[1]}.4f}}",  # 覆盖率
-            f"{{:<{widths[2]}.2f}}",  # 传播速度
-            f"{{:<{widths[3]}.2f}}",  # 传播深度
-            f"{{:<{widths[4]}.4f}}",  # 传播效率
-            f"{{:<{widths[5]}.4f}}",  # 模型稳定性
-            f"{{:<{widths[6]}.4f}}",  # 计算时间
-        ]
-    )
-
     for name, result in results.items():
-        metrics = result["metrics"]
+        metrics = result["independent_cascade"]
         print(
-            row_format.format(
-                name,
-                metrics["coverage"],
-                metrics["propagation_speed"],
-                metrics["propagation_depth"],
-                metrics["propagation_efficiency"],
-                metrics["model_stability"],
-                result["computation_time"],
-            )
+            f"| {name} | {metrics['total_activated']} | {metrics['model_stability']:.4f} |"
+        )
+
+    # 打印线性阈值模型结果
+    print("\n线性阈值模型 (LT) 性能比较结果\n")
+
+    # 打印表头
+    print("| " + " | ".join(headers) + " |")
+    print("| " + " | ".join(["---"] * len(headers)) + " |")
+
+    # 打印数据行
+    for name, result in results.items():
+        metrics = result["linear_threshold"]
+        print(
+            f"| {name} | {metrics['total_activated']} | {metrics['model_stability']:.4f} |"
         )
 
     # 打印种子节点结构特征
-    print("\n种子节点结构特征:")
-    print("-" * 100)
+    print("\n种子节点结构特征\n")
 
-    # 定义结构特征表头和格式
-    struct_headers = [
-        "Algorithm",
-        "Average Degree",
-        "Average Clustering Coefficient",
-        "Average Distance",
-    ]
-    struct_widths = [30, 20, 35, 30]
-    struct_format = "".join([f"{{:<{w}}}" for w in struct_widths])
+    # 定义结构特征表头
+    struct_headers = ["算法", "平均度", "平均聚类系数", "平均距离", "计算时间"]
 
-    print(struct_format.format(*struct_headers))
-    print("-" * 100)
+    # 打印表头
+    print("| " + " | ".join(struct_headers) + " |")
+    print("| " + " | ".join(["---"] * len(struct_headers)) + " |")
 
     # 打印结构特征数据
-    struct_data_format = "".join(
-        [
-            f"{{:<{struct_widths[0]}}}",
-            f"{{:<{struct_widths[1]}.2f}}",
-            f"{{:<{struct_widths[2]}.4f}}",
-            f"{{:<{struct_widths[3]}.2f}}",
-        ]
-    )
-
     for name, result in results.items():
-        metrics = result["metrics"]
+        metrics = result[
+            "independent_cascade"
+        ]  # 使用IC模型的指标，因为结构特征与传播模型无关
         degree_dist = metrics["degree_distribution"]
         clustering_dist = metrics["clustering_distribution"]
 
         avg_degree = sum(degree_dist.values()) / len(degree_dist)
         avg_clustering = sum(clustering_dist.values()) / len(clustering_dist)
         avg_distance = metrics["average_distance"]
+        computation_time = metrics["computation_time"]
 
-        print(struct_data_format.format(name, avg_degree, avg_clustering, avg_distance))
+        print(
+            f"| {name} | {avg_degree:.2f} | {avg_clustering:.4f} | {avg_distance:.2f} | {computation_time:.4f} |"
+        )
 
 
 def main():
@@ -470,9 +471,12 @@ def main():
         gat_model_path=[
             "outputs/twitter/model/twitter_gat_model.pt",
             "outputs/epinions/model/epinions_gat_model.pt",
+            "outputs/facebook/model/facebook_gat_model.pt",
         ],
     )
 
+    print(f"\n网络节点数: {graph.number_of_nodes()}")
+    print(f"网络边数: {graph.number_of_edges()}")
     # 打印结果
     print_comparison_results(results)
 

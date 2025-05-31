@@ -70,3 +70,53 @@
      - 不同规模网络下的可扩展性
      - 不同传播概率下的鲁棒性
      - 不同种子节点数量下的边际效益 -->
+
+## 实验结果
+
+网络节点数: 75879
+网络边数: 405740
+
+### 独立级联模型 (IC) 性能比较结果
+
+| 算法 | 总激活节点数 | 模型稳定性 |
+| --- | --- | --- |
+| Degree Centrality | 63920 | 0.9960 |
+| PageRank | 63989 | 0.9961 |
+| Betweenness Centrality | 63987 | 0.9949 |
+| K-Shell | 64090 | 0.9957 |
+| Eigenvector Centrality | 64042 | 0.9940 |
+| Clustering Coefficient | 60412 | 0.6334 |
+| Structural Holes | 58444 | 0.5762 |
+| GAT_twitter_gat_model | 64015 | 0.9949 |
+| GAT_epinions_gat_model | 63855 | 0.9961 |
+| GAT_facebook_gat_model | 64080 | 0.9961 |
+
+### 线性阈值模型 (LT) 性能比较结果
+
+| 算法 | 总激活节点数 | 模型稳定性 |
+| --- | --- | --- |
+| Degree Centrality | 4523 | 0.9725 |
+| PageRank | 4490 | 0.9749 |
+| Betweenness Centrality | 4552 | 0.9754 |
+| K-Shell | 4291 | 0.9696 |
+| Eigenvector Centrality | 4531 | 0.9703 |
+| Clustering Coefficient | 10 | 1.0000 |
+| Structural Holes | 10 | 1.0000 |
+| GAT_twitter_gat_model | 4350 | 0.9669 |
+| GAT_epinions_gat_model | 4365 | 0.9734 |
+| GAT_facebook_gat_model | 4386 | 0.9671 |
+
+### 种子节点结构特征
+
+| 算法 | 平均度 | 平均聚类系数 | 平均距离 | 计算时间 |
+| --- | --- | --- | --- | --- |
+| Degree Centrality | 1608.70 | 0.0211 | 1.27 | 0.0366 |
+| PageRank | 1407.30 | 0.0136 | 1.64 | 1.1501 |
+| Betweenness Centrality | 1553.70 | 0.0199 | 1.29 | 38.9340 |
+| K-Shell | 600.30 | 0.1290 | 1.38 | 0.7218 |
+| Eigenvector Centrality | 1451.80 | 0.0350 | 1.20 | 1.6030 |
+| Clustering Coefficient | 2.40 | 1.0000 | 3.31 | 5.0312 |
+| Structural Holes | 2.10 | 0.0000 | 3.00 | 8.3868 |
+| GAT_twitter_gat_model | 923.50 | 0.0375 | 1.69 | 2.0785 |
+| GAT_epinions_gat_model | 923.50 | 0.0375 | 1.69 | 1.4980 |
+| GAT_facebook_gat_model | 923.50 | 0.0375 | 1.69 | 1.5191 |

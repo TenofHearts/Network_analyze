@@ -14,17 +14,23 @@ class PropagationMetrics:
         return len(activated_nodes) / self.graph.number_of_nodes()
 
     def calculate_propagation_speed(
-        self, activation_times: Dict[int, int], target_coverage: float
-    ) -> int:
-        """计算传播速度：达到特定覆盖率所需的时间步数"""
-        total_nodes = self.graph.number_of_nodes()
-        target_nodes = int(total_nodes * target_coverage)
+        self, activation_times: Dict[int, int], max_steps: int = 5
+    ) -> float:
+        """计算传播速度：在固定步数内覆盖的节点数量比例
 
-        # 按激活时间排序
-        sorted_times = sorted(activation_times.values())
-        if len(sorted_times) >= target_nodes:
-            return sorted_times[target_nodes - 1]
-        return float("inf")
+        参数:
+            activation_times: 节点激活时间字典
+            max_steps: 最大传播步数，默认为5步
+
+        返回:
+            在max_steps步内被激活的节点数量比例
+        """
+        # 计算在max_steps步内被激活的节点数量
+        activated_in_steps = sum(
+            1 for time in activation_times.values() if time <= max_steps
+        )
+        # 返回覆盖率
+        return activated_in_steps / self.graph.number_of_nodes()
 
     def calculate_propagation_depth(
         self, activation_paths: Dict[int, List[int]]
@@ -35,12 +41,6 @@ class PropagationMetrics:
             max_depth = max(max_depth, len(path) - 1)
         return max_depth
 
-    def calculate_propagation_efficiency(
-        self, activated_nodes: Set[int], total_time: int
-    ) -> float:
-        """计算传播效率：单位时间内激活的节点数"""
-        return len(activated_nodes) / total_time if total_time > 0 else 0
-
 
 class StabilityMetrics:
     def __init__(self):
@@ -48,7 +48,20 @@ class StabilityMetrics:
 
     def calculate_model_stability(self, results: List[List[float]]) -> float:
         """计算模型结果稳定性：多次模拟的标准差"""
-        return np.std([np.mean(run) for run in results])
+        if not results or not results[0]:
+            return 0.0
+
+        # 计算每次模拟的平均激活率
+        mean_activations = [np.mean(run) for run in results]
+
+        # 计算变异系数（标准差/平均值）作为稳定性指标
+        if np.mean(mean_activations) == 0:
+            return 0.0
+
+        cv = np.std(mean_activations) / np.mean(mean_activations)
+        # 将变异系数转换为稳定性分数（0-1之间，1表示最稳定）
+        stability = 1.0 / (1.0 + cv)
+        return stability
 
     def calculate_seed_consistency(self, seed_sets: List[Set[int]]) -> float:
         """计算种子节点选择的一致性：不同参数设置下的重叠率"""
@@ -125,13 +138,21 @@ class StructuralMetrics:
 class EfficiencyMetrics:
     def __init__(self):
         self.start_time = None
+        self.end_time = None
 
     def start_timer(self):
         """开始计时"""
         self.start_time = time.time()
+        self.end_time = None
+
+    def stop_timer(self):
+        """停止计时"""
+        self.end_time = time.time()
 
     def calculate_computation_time(self) -> float:
         """计算节点重要性计算时间"""
         if self.start_time is None:
             return 0.0
-        return time.time() - self.start_time
+        if self.end_time is None:
+            self.stop_timer()
+        return max(0.0, self.end_time - self.start_time)
