@@ -7,7 +7,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.append(str(project_root))
 
-from eval.test_metrics import evaluate_model_performance
+from eval.test_metrics import evaluate_model_performance, calculate_structural_metrics
 import time
 from typing import List, Set, Dict, Tuple
 import torch
@@ -357,6 +357,9 @@ def compare_algorithms(
         # 记录计算时间
         computation_time = max(0.0, time.time() - start_time)  # 确保时间不为负
 
+        # 计算结构特征指标
+        structural_metrics = calculate_structural_metrics(graph, seed_nodes)
+
         # 创建模拟的模型结果
         model_results = {
             "activation_times": {node: 0 for node in seed_nodes},
@@ -389,6 +392,7 @@ def compare_algorithms(
             "seed_nodes": seed_nodes,
             "independent_cascade": ic_metrics,
             "linear_threshold": lt_metrics,
+            "structural_metrics": structural_metrics,
             "computation_time": computation_time,  # 使用同一个计算时间
         }
 
@@ -440,16 +444,14 @@ def print_comparison_results(results: Dict):
 
     # 打印结构特征数据
     for name, result in results.items():
-        metrics = result[
-            "independent_cascade"
-        ]  # 使用IC模型的指标，因为结构特征与传播模型无关
+        metrics = result["structural_metrics"]
         degree_dist = metrics["degree_distribution"]
         clustering_dist = metrics["clustering_distribution"]
 
         avg_degree = sum(degree_dist.values()) / len(degree_dist)
         avg_clustering = sum(clustering_dist.values()) / len(clustering_dist)
         avg_distance = metrics["average_distance"]
-        computation_time = metrics["computation_time"]
+        computation_time = result["computation_time"]
 
         print(
             f"| {name} | {avg_degree:.2f} | {avg_clustering:.4f} | {avg_distance:.2f} | {computation_time:.4f} |"
