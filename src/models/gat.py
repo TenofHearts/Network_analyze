@@ -17,6 +17,9 @@ class GATModel(nn.Module):
         use_residual=True,
         use_layer_norm=True,
         use_gatv2=True,
+        attn_dropout=0.2,
+        use_skip_connection=True,
+        activation="elu",
     ):
         """
         优化的图注意力网络模型，适用于大型网络
@@ -30,12 +33,19 @@ class GATModel(nn.Module):
             use_residual: 是否使用残差连接
             use_layer_norm: 是否使用层归一化
             use_gatv2: 是否使用GATv2（动态注意力）
+            attn_dropout: 注意力机制的dropout比率
+            use_skip_connection: 是否使用跳跃连接
+            activation: 激活函数类型 ('elu', 'relu', 'leaky_relu')
         """
         super(GATModel, self).__init__()
         self.dropout = dropout
         self.use_residual = use_residual
         self.use_layer_norm = use_layer_norm
         self.use_gatv2 = use_gatv2
+        self.use_skip_connection = use_skip_connection
+        self.activation_type = activation
+        self.hidden_channels = hidden_channels
+        self.heads = heads
 
         # 选择GAT版本
         GATLayer = GATv2Conv if use_gatv2 else GATConv
@@ -45,9 +55,9 @@ class GATModel(nn.Module):
             in_channels,
             hidden_channels,
             heads=heads,
-            dropout=dropout,
+            dropout=attn_dropout,
             concat=True,
-            add_self_loops=False,  # 手动添加自环
+            add_self_loops=False,
         )
 
         # 第二层GAT
@@ -55,7 +65,7 @@ class GATModel(nn.Module):
             hidden_channels * heads,
             hidden_channels,
             heads=1,
-            dropout=dropout,
+            dropout=attn_dropout,
             concat=False,
             add_self_loops=False,
         )
@@ -73,6 +83,20 @@ class GATModel(nn.Module):
             self.residual1 = nn.Linear(in_channels, hidden_channels * heads)
             self.residual2 = nn.Linear(hidden_channels * heads, hidden_channels)
 
+        # 跳跃连接
+        if use_skip_connection:
+            self.skip_connection = nn.Linear(hidden_channels * heads, hidden_channels)
+
+        # 激活函数
+        if activation == "elu":
+            self.activation = F.elu
+        elif activation == "relu":
+            self.activation = F.relu
+        elif activation == "leaky_relu":
+            self.activation = lambda x: F.leaky_relu(x, negative_slope=0.2)
+        else:
+            raise ValueError(f"不支持的激活函数类型: {activation}")
+
     def forward(self, x, edge_index, batch=None):
         """
         前向传播
@@ -85,8 +109,10 @@ class GATModel(nn.Module):
         # 添加自环
         edge_index, _ = add_self_loops(edge_index)
 
-        # 第一层GAT
+        # 保存输入用于跳跃连接
         identity = x
+
+        # 第一层GAT
         x = self.conv1(x, edge_index)
 
         if self.use_layer_norm:
@@ -95,21 +121,28 @@ class GATModel(nn.Module):
         if self.use_residual:
             x = x + self.residual1(identity)
 
-        x = F.elu(x)
+        x = self.activation(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
 
+        # 保存第一层输出用于跳跃连接
+        skip_input = x
+
         # 第二层GAT
-        identity = x
         x = self.conv2(x, edge_index)
 
         if self.use_layer_norm:
             x = self.norm2(x)
 
         if self.use_residual:
-            x = x + self.residual2(identity)
+            x = x + self.residual2(skip_input)
 
-        x = F.elu(x)
+        x = self.activation(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
+
+        # 跳跃连接
+        if self.use_skip_connection:
+            skip = self.skip_connection(skip_input)
+            x = x + skip
 
         # 输出层
         x = self.out_layer(x)

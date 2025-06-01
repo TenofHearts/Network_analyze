@@ -358,6 +358,7 @@ def compare_algorithms(
         computation_time = max(0.0, time.time() - start_time)  # 确保时间不为负
 
         # 计算结构特征指标
+        print("计算结构特征指标...")
         structural_metrics = calculate_structural_metrics(graph, seed_nodes)
 
         # 创建模拟的模型结果
