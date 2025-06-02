@@ -124,47 +124,6 @@ def gat_selection(
         return set(np.argsort(scores)[-k:].tolist())
 
 
-def simulate_propagation(
-    graph: nx.Graph, seed_nodes: Set[int], activation_prob: float = 0.1
-) -> Dict:
-    """模拟信息传播过程"""
-    activation_times = {node: 0 for node in seed_nodes}  # 种子节点在时间0被激活
-    activation_paths = {node: [node] for node in seed_nodes}
-    current_time = 0
-    newly_activated = seed_nodes
-
-    while newly_activated:
-        current_time += 1
-        next_activated = set()
-
-        for node in newly_activated:
-            for neighbor in graph.neighbors(node):
-                if neighbor not in activation_times:  # 如果邻居节点未被激活
-                    if np.random.random() < activation_prob:  # 激活概率
-                        activation_times[neighbor] = current_time
-                        activation_paths[neighbor] = activation_paths[node] + [neighbor]
-                        next_activated.add(neighbor)
-
-        newly_activated = next_activated
-
-    # 模拟多次传播结果
-    propagation_results = []
-    for _ in range(3):  # 进行3次传播模拟
-        results = []
-        for node in graph.nodes():
-            if node in activation_times:
-                results.append(activation_times[node] / current_time)
-            else:
-                results.append(0.0)
-        propagation_results.append(results)
-
-    return {
-        "activation_times": activation_times,
-        "activation_paths": activation_paths,
-        "propagation_results": propagation_results,
-    }
-
-
 def k_shell_selection(graph: nx.Graph, k: int) -> Set[int]:
     """基于K-壳分解的关键节点选择"""
     # 计算每个节点的k-shell值
@@ -361,18 +320,10 @@ def compare_algorithms(
         print("计算结构特征指标...")
         structural_metrics = calculate_structural_metrics(graph, seed_nodes)
 
-        # 创建模拟的模型结果
-        model_results = {
-            "activation_times": {node: 0 for node in seed_nodes},
-            "activation_paths": {node: [node] for node in seed_nodes},
-            "computation_time": computation_time,  # 添加计算时间到模型结果中
-        }
-
         # 使用独立级联模型评估
         print("使用独立级联模型评估...")
         ic_metrics = evaluate_model_performance(
             graph=graph,
-            model_results=model_results,
             seed_nodes=seed_nodes,
             n_rounds=n_rounds,
             propagation_model="ic",
@@ -382,7 +333,6 @@ def compare_algorithms(
         print("使用线性阈值模型评估...")
         lt_metrics = evaluate_model_performance(
             graph=graph,
-            model_results=model_results,
             seed_nodes=seed_nodes,
             n_rounds=n_rounds,
             propagation_model="lt",

@@ -46,19 +46,16 @@ class StabilityMetrics:
     def __init__(self):
         pass
 
-    def calculate_model_stability(self, results: List[List[float]]) -> float:
+    def calculate_model_stability(self, results: List[float]) -> float:
         """计算模型结果稳定性：多次模拟的标准差"""
         if not results or not results[0]:
             return 0.0
 
-        # 计算每次模拟的平均激活率
-        mean_activations = [np.mean(run) for run in results]
-
         # 计算变异系数（标准差/平均值）作为稳定性指标
-        if np.mean(mean_activations) == 0:
+        if np.mean(results) == 0:
             return 0.0
 
-        cv = np.std(mean_activations) / np.mean(mean_activations)
+        cv = np.std(results) / np.mean(results)
         # 将变异系数转换为稳定性分数（0-1之间，1表示最稳定）
         stability = 1.0 / (1.0 + cv)
         return stability
@@ -133,26 +130,3 @@ class StructuralMetrics:
             if any(node in seed_nodes for node in community):
                 covered_communities.add(tuple(sorted(community)))
         return len(covered_communities)
-
-
-class EfficiencyMetrics:
-    def __init__(self):
-        self.start_time = None
-        self.end_time = None
-
-    def start_timer(self):
-        """开始计时"""
-        self.start_time = time.time()
-        self.end_time = None
-
-    def stop_timer(self):
-        """停止计时"""
-        self.end_time = time.time()
-
-    def calculate_computation_time(self) -> float:
-        """计算节点重要性计算时间"""
-        if self.start_time is None:
-            return 0.0
-        if self.end_time is None:
-            self.stop_timer()
-        return max(0.0, self.end_time - self.start_time)

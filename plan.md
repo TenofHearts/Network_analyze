@@ -78,45 +78,141 @@
 
 ### 独立级联模型 (IC) 性能比较结果
 
+$k=10$
+
 | 算法 | 总激活节点数 | 模型稳定性 |
 | --- | --- | --- |
-| Degree Centrality | 63972 | 0.9961 |
-| PageRank | 63993 | 0.9962 |
-| Betweenness Centrality | 64072 | 0.9964 |
-| K-Shell | 63974 | 0.9940 |
-| Eigenvector Centrality | 64207 | 0.9966 |
-| Clustering Coefficient | 61295 | 0.6653 |
-| Structural Holes | 61129 | 0.6653 |
-| GAT_twitter_gat_model | 64025 | 0.9950 |
-| GAT_epinions_gat_model | 64044 | 0.9954 |
-| GAT_facebook_gat_model | 64000 | 0.9957 |
+| Degree Centrality | 22831.05 | 0.9948 |
+| PageRank | 22846.85 | 0.9959 |
+| Betweenness Centrality | 22825.15 | 0.9964 |
+| K-Shell | 22804.1 | 0.9951 |
+| Eigenvector Centrality | 22840.55 | 0.9960 |
+| Clustering Coefficient | 21713.25 | 0.8134 |
+| Structural Holes | 21711.55 | 0.8134 |
+| GAT_twitter_gat_model | 22846.4 | 0.9948 |
+| GAT_epinions_gat_model | 22877.4 | 0.9942 |
+| GAT_facebook_gat_model | 22870.35 | 0.9960 |
+
+$k = 5$
+
+| 算法 | 总激活节点数 | 模型稳定性 |
+| --- | --- | --- |
+| Degree Centrality | 22865.0 | 0.9950 |
+| PageRank | 22924.7 | 0.9961 |
+| Betweenness Centrality | 22853.0 | 0.9958 |
+| K-Shell | 22891.25 | 0.9965 |
+| Eigenvector Centrality | 22898.5 | 0.9970 |
+| Clustering Coefficient | 19420.75 | 0.7042 |
+| Structural Holes | 17097.2 | 0.6340 |
+| GAT_twitter_gat_model | 22905.7 | 0.9962 |
+| GAT_epinions_gat_model | 22899.2 | 0.9964 |
+| GAT_facebook_gat_model | 22874.6 | 0.9964 |
+
+$k = 1$
+
+| 算法 | 总激活节点数 | 模型稳定性 |
+| --- | --- | --- |
+| Degree Centrality | 22847.65 | 0.9955 |
+| PageRank | 22898.8 | 0.9961 |
+| Betweenness Centrality | 22870.9 | 0.9957 |
+| K-Shell | 22814.0 | 0.9952 |
+| Eigenvector Centrality | 22873.9 | 0.9968 |
+| Clustering Coefficient | 2277.65 | 0.2501 |
+| Structural Holes | 10257.25 | 0.4750 |
+| GAT_twitter_gat_model | 22819.9 | 0.9953 |
+| GAT_epinions_gat_model | 22879.5 | 0.9959 |
+| GAT_facebook_gat_model | 22881.65 | 0.9964 |
 
 ### 线性阈值模型 (LT) 性能比较结果
 
+$k = 10$
+
 | 算法 | 总激活节点数 | 模型稳定性 |
 | --- | --- | --- |
-| Degree Centrality | 4550 | 0.9775 |
-| PageRank | 4504 | 0.9712 |
-| Betweenness Centrality | 4505 | 0.9757 |
-| K-Shell | 4282 | 0.9656 |
-| Eigenvector Centrality | 4517 | 0.9663 |
-| Clustering Coefficient | 10 | 1.0000 |
-| Structural Holes | 10 | 1.0000 |
-| GAT_twitter_gat_model | 4402 | 0.9756 |
-| GAT_epinions_gat_model | 4416 | 0.9636 |
-| GAT_facebook_gat_model | 4440 | 0.9689 |
+| Degree Centrality | 3844.45 | 0.9976 |
+| PageRank | 3803.3 | 0.9964 |
+| Betweenness Centrality | 3838.0 | 0.9970 |
+| K-Shell | 3647.95 | 0.9959 |
+| Eigenvector Centrality | 3834.7 | 0.9950 |
+| Clustering Coefficient | 10.0 | 1.0000 |
+| Structural Holes | 10.0 | 1.0000 |
+| GAT_twitter_gat_model | 3770.8 | 0.9965 |
+| GAT_epinions_gat_model | 3768.4 | 0.9967 |
+| GAT_facebook_gat_model | 3774.45 | 0.9960 |
+
+$k = 5$
+
+| 算法 | 总激活节点数 | 模型稳定性 |
+| --- | --- | --- |
+| Degree Centrality | 3746.7 | 0.9972 |
+| PageRank | 3732.95 | 0.9967 |
+| Betweenness Centrality | 3727.8 | 0.9968 |
+| K-Shell | 3337.55 | 0.9824 |
+| Eigenvector Centrality | 3766.95 | 0.9967 |
+| Clustering Coefficient | 5.0 | 1.0000 |
+| Structural Holes | 5.0 | 1.0000 |
+| GAT_twitter_gat_model | 3574.8 | 0.9927 |
+| GAT_epinions_gat_model | 3593.0 | 0.9933 |
+| GAT_facebook_gat_model | 3569.05 | 0.9929 |
+
+$k = 1$
+
+| 算法 | 总激活节点数 | 模型稳定性 |
+| --- | --- | --- |
+| Degree Centrality | 1.0 | 1.0000 |
+| PageRank | 1.0 | 1.0000 |
+| Betweenness Centrality | 1.0 | 1.0000 |
+| K-Shell | 1.0 | 1.0000 |
+| Eigenvector Centrality | 1.0 | 1.0000 |
+| Clustering Coefficient | 1.0 | 1.0000 |
+| Structural Holes | 1.0 | 1.0000 |
+| GAT_twitter_gat_model | 1.0 | 1.0000 |
+| GAT_epinions_gat_model | 1.0 | 1.0000 |
+| GAT_facebook_gat_model | 1.0 | 1.0000 |
 
 ### 种子节点结构特征
 
+$k = 10$
+
 | 算法 | 平均度 | 平均聚类系数 | 平均距离 | 计算时间 |
 | --- | --- | --- | --- | --- |
-| Degree Centrality | 1608.70 | 0.0211 | 1.27 | 0.0335 |
-| PageRank | 1407.30 | 0.0136 | 1.64 | 0.9037 |
-| Betweenness Centrality | 1553.70 | 0.0199 | 1.29 | 34.0237 |
-| K-Shell | 600.30 | 0.1290 | 1.38 | 0.8560 |
-| Eigenvector Centrality | 1451.80 | 0.0350 | 1.20 | 1.4042 |
-| Clustering Coefficient | 2.40 | 1.0000 | 3.31 | 7.5862 |
-| Structural Holes | 2.10 | 0.0000 | 3.00 | 7.8005 |
-| GAT_twitter_gat_model | 1228.50 | 0.0207 | 1.60 | 1.7052 |
-| GAT_epinions_gat_model | 1228.50 | 0.0207 | 1.60 | 1.4823 |
-| GAT_facebook_gat_model | 1228.50 | 0.0207 | 1.60 | 1.3514 |
+| Degree Centrality | 1608.70 | 0.0211 | 1.27 | 0.0423 |
+| PageRank | 1407.30 | 0.0136 | 1.64 | 1.0891 |
+| Betweenness Centrality | 1553.70 | 0.0199 | 1.29 | 35.5783 |
+| K-Shell | 600.30 | 0.1290 | 1.38 | 0.7075 |
+| Eigenvector Centrality | 1451.80 | 0.0350 | 1.20 | 1.4822 |
+| Clustering Coefficient | 2.40 | 1.0000 | 3.31 | 5.0315 |
+| Structural Holes | 2.10 | 0.0000 | 3.00 | 8.3645 |
+| GAT_twitter_gat_model | 1228.50 | 0.0207 | 1.60 | 2.2576 |
+| GAT_epinions_gat_model | 1228.50 | 0.0207 | 1.60 | 1.7004 |
+| GAT_facebook_gat_model | 1228.50 | 0.0207 | 1.60 | 1.6282 |
+
+$k = 5$
+
+| 算法 | 平均度 | 平均聚类系数 | 平均距离 | 计算时间 |
+| --- | --- | --- | --- | --- |
+| Degree Centrality | 1958.60 | 0.0164 | 1.20 | 0.0378 |
+| PageRank | 1831.20 | 0.0141 | 1.50 | 0.9555 |
+| Betweenness Centrality | 1742.40 | 0.0161 | 1.30 | 19.6071 |
+| K-Shell | 311.20 | 0.1757 | 1.10 | 0.6924 |
+| Eigenvector Centrality | 1751.40 | 0.0282 | 1.00 | 1.4705 |
+| Clustering Coefficient | 2.80 | 1.0000 | 3.00 | 7.9775 |
+| Structural Holes | 2.20 | 0.0000 | 3.00 | 5.4000 |
+| GAT_twitter_gat_model | 1294.00 | 0.0186 | 1.70 | 2.1426 |
+| GAT_epinions_gat_model | 1294.00 | 0.0186 | 1.70 | 1.6378 |
+| GAT_facebook_gat_model | 1294.00 | 0.0186 | 1.70 | 1.7189 |
+
+$k = 1$
+
+| 算法 | 平均度 | 平均聚类系数 | 平均距离 | 计算时间 |
+| --- | --- | --- | --- | --- |
+| Degree Centrality | 3044.00 | 0.0102 | 0.00 | 0.0380 |
+| PageRank | 3044.00 | 0.0102 | 0.00 | 0.9750 |
+| Betweenness Centrality | 1626.00 | 0.0191 | 0.00 | 4.0680 |
+| K-Shell | 682.00 | 0.0537 | 0.00 | 0.8645 |
+| Eigenvector Centrality | 3044.00 | 0.0102 | 0.00 | 1.4824 |
+| Clustering Coefficient | 3.00 | 1.0000 | 0.00 | 8.2485 |
+| Structural Holes | 4.00 | 0.0000 | 0.00 | 4.0779 |
+| GAT_twitter_gat_model | 1682.00 | 0.0077 | 0.00 | 2.2342 |
+| GAT_epinions_gat_model | 1682.00 | 0.0077 | 0.00 | 1.6342 |
+| GAT_facebook_gat_model | 1682.00 | 0.0077 | 0.00 | 1.6646 |

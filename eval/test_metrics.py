@@ -12,7 +12,6 @@ from metrics import (
     PropagationMetrics,
     StabilityMetrics,
     StructuralMetrics,
-    EfficiencyMetrics,
 )
 from src.models.propagation import IndependentCascade, LinearThreshold
 
@@ -56,9 +55,7 @@ def calculate_structural_metrics(
 
 def evaluate_model_performance(
     graph: nx.Graph,
-    model_results: dict,
     seed_nodes: set,
-    communities: list = None,
     n_rounds: int = 20,
     propagation_model: str = "ic",
 ) -> dict:
@@ -67,12 +64,7 @@ def evaluate_model_performance(
 
     参数:
         graph: 网络图
-        model_results: 模型输出结果，包含以下字段：
-            - activation_times: Dict[int, int] 节点激活时间
-            - activation_paths: Dict[int, List[int]] 传播路径
-            - computation_time: float 计算关键节点的时间
         seed_nodes: 种子节点集合
-        communities: 社区列表，可选
         n_rounds: 传播模拟轮次
         propagation_model: 传播模型类型，可选 "ic" 或 "lt"
 
@@ -89,7 +81,7 @@ def evaluate_model_performance(
         step = 10
     else:
         propagation = IndependentCascade(graph)
-        step = 10
+        step = 15
 
     # 进行多次传播模拟
     propagation_results = []
@@ -100,27 +92,14 @@ def evaluate_model_performance(
         # 使用相同的种子节点进行传播
         result = propagation.simulate(list(seed_nodes))
         # 记录每轮传播的激活历史
-        propagation_results.append(result["activation_history"])
+        propagation_results.append(result["total_activated"])
         # 记录激活时间和路径
         all_activation_times.append(result.get("activation_times", {}))
         all_activation_paths.append(result.get("activation_paths", {}))
 
     # 计算传播效果指标
     # 使用所有轮次的平均激活节点
-    total_activated = set()
-    for times in all_activation_times:
-        total_activated.update(times.keys())
-
-    # 计算平均激活时间
-    avg_activation_times = {}
-    for node in total_activated:
-        times = [t.get(node, float("inf")) for t in all_activation_times]
-        avg_activation_times[node] = sum(times) / len(times) if times else float("inf")
-
-    # 计算传播速度（10步覆盖率）
-    speed = prop_metrics.calculate_propagation_speed(
-        avg_activation_times, max_steps=step
-    )
+    total_activated = np.mean(np.array(propagation_results))
 
     # 计算稳定性指标
     stability = stab_metrics.calculate_model_stability(propagation_results)
@@ -128,10 +107,7 @@ def evaluate_model_performance(
     # 返回所有指标
     return {
         # 传播效果指标
-        "total_activated": len(total_activated),
-        "propagation_speed": speed,
+        "total_activated": total_activated,
         # 稳定性指标
         "model_stability": stability,
-        # 计算时间
-        "computation_time": model_results.get("computation_time", 0.0),
     }
