@@ -278,6 +278,9 @@ def compare_algorithms(
     """
     # 测试不同算法
     algorithms = {
+        "Random Selection": lambda g, k: set(
+            np.random.choice(g.nodes(), k, replace=False)
+        ),
         "Degree Centrality": degree_centrality_selection,
         "PageRank": pagerank_selection,
         "Betweenness Centrality": betweenness_selection,
@@ -413,7 +416,7 @@ def main():
     """主函数"""
     # 加载网络数据和特征
     print("加载网络数据...")
-    graph, features = load_network("data/processed/epinions_processed.pkl")
+    graph, features = load_network("data/processed/random_processed.pkl")
 
     # 比较算法性能（包括GAT模型）
     print("开始比较算法性能...")

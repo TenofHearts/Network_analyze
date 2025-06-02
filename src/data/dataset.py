@@ -13,6 +13,11 @@ from pathlib import Path
 import multiprocessing as mp
 from functools import partial
 from itertools import chain
+import sys
+
+# 添加项目根目录到Python路径
+project_root = Path(__file__).parent.parent.parent
+sys.path.append(str(project_root))
 
 from src.models.propagation import IndependentCascade
 from src.config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, DATASET_URLS
@@ -21,7 +26,12 @@ from src.config import DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, DATASET_URLS
 class SNAPDataset:
     """Stanford SNAP数据集加载器"""
 
-    def __init__(self, dataset_name: str, n_simulations: int = 100):
+    def __init__(
+        self,
+        dataset_name: str,
+        n_simulations: int = 100,
+        graph: Optional[nx.Graph] = None,
+    ):
         """
         初始化数据集加载器
 
@@ -34,8 +44,12 @@ class SNAPDataset:
         self.n_simulations = n_simulations
         self.cache_file = PROCESSED_DATA_DIR / f"{dataset_name}_processed.pkl"
 
+        if graph is not None:
+            # 如果提供了图对象，则直接使用
+            self.graph = graph
+
         # 下载数据集（如果不存在）
-        if not os.path.exists(self.raw_file):
+        if not os.path.exists(self.raw_file) and not graph:
             self._download_dataset()
 
     def _download_dataset(self):
@@ -210,7 +224,7 @@ class SNAPDataset:
         n_nodes = len(graph)
 
         # 创建进程池
-        n_cores = max(1, mp.cpu_count() - 4)  # 保留一个核心给系统
+        n_cores = max(1, mp.cpu_count() - 2)  # 保留一个核心给系统
         print(f"使用 {n_cores} 个CPU核心进行并行计算")
 
         # 将节点按进程数分组
@@ -277,24 +291,27 @@ class SNAPDataset:
         返回:
             PyG Data对象
         """
+        # 初始化cached_data变量
+        cached_data = None
+
         # 尝试从缓存加载处理后的数据
-        cached_data = self._load_processed_data()
+        if self.graph is None:
+            cached_data = self._load_processed_data()
+
+        if self.graph is None:
+            self.graph = self.load_graph()
 
         if cached_data is not None:
             features, labels = cached_data
         else:
             # 如果没有缓存，重新计算
-            graph = self.load_graph()
-            features = self.create_node_features(graph)
-            labels = self.generate_ic_labels(graph)
+            features = self.create_node_features(self.graph)
+            labels = self.generate_ic_labels(self.graph)
             # 保存处理后的数据
             self._save_processed_data(features, labels)
 
-        # 加载图数据（这个操作比较快，不需要缓存）
-        graph = self.load_graph()
-
         # 创建边索引
-        edge_index = np.array(list(graph.edges())).T
+        edge_index = np.array(list(self.graph.edges())).T
 
         # 转换为PyG Data对象
         data = Data(
@@ -304,3 +321,15 @@ class SNAPDataset:
         )
 
         return data
+
+
+if __name__ == "__main__":
+    # 生成 BA 网络数据集，并保存在ProcessedData目录下
+    dataset_name = "random"
+    n_simulations = 10  # IC模型模拟次数
+    import networkx as nx
+
+    graph = nx.barabasi_albert_graph(40000, 5)  # 生成一个BA网络
+    nx.write_edgelist(graph, "data/raw/random.txt")
+    dataset = SNAPDataset(dataset_name, n_simulations, graph=graph)
+    dataset.to_pyg_data()

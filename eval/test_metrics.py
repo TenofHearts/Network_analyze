@@ -81,7 +81,7 @@ def evaluate_model_performance(
         step = 10
     else:
         propagation = IndependentCascade(graph)
-        step = 15
+        step = 10
 
     # 进行多次传播模拟
     propagation_results = []
@@ -90,7 +90,7 @@ def evaluate_model_performance(
 
     for _ in range(n_rounds):
         # 使用相同的种子节点进行传播
-        result = propagation.simulate(list(seed_nodes))
+        result = propagation.simulate(list(seed_nodes), max_steps=step)
         # 记录每轮传播的激活历史
         propagation_results.append(result["total_activated"])
         # 记录激活时间和路径

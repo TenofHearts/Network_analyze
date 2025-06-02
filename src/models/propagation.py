@@ -34,9 +34,11 @@ class IndependentCascade:
         # 记录激活时间和路径
         activation_times = {node: 0 for node in seed_nodes}  # 种子节点在时间0被激活
         activation_paths = {node: [node] for node in seed_nodes}
+        infection_path = {node: node for node in seed_nodes}  # 记录感染路径
 
         # 记录每个时间步的激活节点数
         activation_history = [len(active_nodes)]
+        infection_by_step = [set(seed_nodes)]  # 记录每轮感染的节点
 
         # 传播过程
         for step in range(max_steps):
@@ -68,10 +70,12 @@ class IndependentCascade:
                     # 找到激活该节点的邻居（随机选择一个）
                     activator = np.random.choice(active_neighbors)
                     activation_paths[node] = activation_paths[activator] + [node]
+                    infection_path[node] = activator  # 记录感染路径
 
             # 更新激活节点集合
             active_nodes.update(newly_active)
             activation_history.append(len(active_nodes))
+            infection_by_step.append(newly_active.copy())
 
         return {
             "total_activated": len(active_nodes),
@@ -79,6 +83,9 @@ class IndependentCascade:
             "propagation_steps": len(activation_history) - 1,
             "activation_times": activation_times,
             "activation_paths": activation_paths,
+            "all_activated": active_nodes,
+            "infection_by_step": infection_by_step,
+            "infection_path": infection_path,
         }
 
 
@@ -145,9 +152,11 @@ class LinearThreshold:
         # 记录激活时间和路径
         activation_times = {node: 0 for node in seed_nodes}
         activation_paths = {node: [node] for node in seed_nodes}
+        infection_path = {node: node for node in seed_nodes}  # 记录感染路径
 
         # 记录每个时间步的激活节点数
         activation_history = [len(active_nodes)]
+        infection_by_step = [set(seed_nodes)]  # 记录每轮感染的节点
 
         # 传播过程
         for step in range(max_steps):
@@ -190,10 +199,12 @@ class LinearThreshold:
                         key=lambda n: self.edge_weights.get((n, node), 0),
                     )
                     activation_paths[node] = activation_paths[activator] + [node]
+                    infection_path[node] = activator  # 记录感染路径
 
             # 更新激活节点集合
             active_nodes.update(newly_active)
             activation_history.append(len(active_nodes))
+            infection_by_step.append(newly_active.copy())
 
         return {
             "total_activated": len(active_nodes),
@@ -201,4 +212,7 @@ class LinearThreshold:
             "propagation_steps": len(activation_history) - 1,
             "activation_times": activation_times,
             "activation_paths": activation_paths,
+            "all_activated": active_nodes,
+            "infection_by_step": infection_by_step,
+            "infection_path": infection_path,
         }
