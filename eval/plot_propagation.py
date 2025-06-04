@@ -318,12 +318,12 @@ if __name__ == "__main__":
     # 为每个算法生成可视化结果
     for name, algorithm in algorithms.items():
         print(f"\n使用 {name} 算法选择种子节点...")
-        seed_nodes = algorithm(graph, 10)
+        seed_nodes = algorithm(graph, 400)
 
         print(f"可视化 {name} 算法的传播过程...")
         visualize_propagation_comparison(
             graph=graph,
             seed_nodes=seed_nodes,
-            max_steps=10,
+            max_steps=3,
             save_dir=f"visualizations/{name}",
         )
